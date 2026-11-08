@@ -1,0 +1,211 @@
+
+-- ALEXIS FPS BOOSTER V9
+-- Optimizacion visual local para Roblox
+
+if _G.AlexisFPS then
+    pcall(function() _G.AlexisFPS:Destroy() end)
+end
+
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+
+local Player = Players.LocalPlayer
+local Enabled = false
+local Saved = {}
+local Connections = {}
+
+local function save(obj, prop)
+    if Saved[obj] == nil then
+        Saved[obj] = {}
+    end
+    if Saved[obj][prop] == nil then
+        Saved[obj][prop] = obj[prop]
+    end
+end
+
+local function optimize()
+    pcall(function()
+        save(Lighting, "GlobalShadows")
+        save(Lighting, "FogEnd")
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 100000
+    end)
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("BasePart") then
+                save(obj, "CastShadow")
+                obj.CastShadow = false
+            elseif obj:IsA("ParticleEmitter")
+                or obj:IsA("Trail")
+                or obj:IsA("Beam")
+                or obj:IsA("Smoke")
+                or obj:IsA("Fire")
+                or obj:IsA("Sparkles") then
+                save(obj, "Enabled")
+                obj.Enabled = false
+            end
+        end)
+    end
+end
+
+local function restore()
+    for obj, properties in pairs(Saved) do
+        if obj and obj.Parent then
+            for prop, value in pairs(properties) do
+                pcall(function()
+                    obj[prop] = value
+                end)
+            end
+        end
+    end
+    table.clear(Saved)
+end
+
+local function setEnabled(value)
+    Enabled = value
+    if Enabled then
+        optimize()
+    else
+        restore()
+    end
+end
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "AlexisFPSV9"
+GUI.ResetOnSpawn = false
+GUI.Parent = game:GetService("CoreGui")
+_G.AlexisFPS = GUI
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.fromOffset(280, 190)
+Main.Position = UDim2.new(0.5, -140, 0.5, -95)
+Main.BackgroundColor3 = Color3.fromRGB(12, 16, 27)
+Main.Parent = GUI
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(0, 200, 255)
+Stroke.Thickness = 1.5
+Stroke.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -45, 0, 42)
+Title.Position = UDim2.fromOffset(12, 4)
+Title.BackgroundTransparency = 1
+Title.Text = "ALEXIS FPS BOOSTER"
+Title.TextColor3 = Color3.fromRGB(0, 220, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.Parent = Main
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.fromOffset(32, 32)
+Close.Position = UDim2.new(1, -38, 0, 8)
+Close.Text = "X"
+Close.TextColor3 = Color3.new(1,1,1)
+Close.BackgroundColor3 = Color3.fromRGB(100, 30, 45)
+Close.Parent = Main
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 8)
+
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, -20, 0, 35)
+Status.Position = UDim2.fromOffset(10, 55)
+Status.BackgroundTransparency = 1
+Status.Text = "ESTADO: DESACTIVADO"
+Status.TextColor3 = Color3.fromRGB(180, 190, 205)
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 13
+Status.Parent = Main
+
+local Toggle = Instance.new("TextButton")
+Toggle.Size = UDim2.new(1, -35, 0, 48)
+Toggle.Position = UDim2.fromOffset(17, 100)
+Toggle.BackgroundColor3 = Color3.fromRGB(20, 75, 95)
+Toggle.Text = "ACTIVAR BOOST"
+Toggle.TextColor3 = Color3.new(1,1,1)
+Toggle.Font = Enum.Font.GothamBold
+Toggle.TextSize = 15
+Toggle.Parent = Main
+Instance.new("UICorner", Toggle).CornerRadius = UDim.new(0, 10)
+
+local Info = Instance.new("TextLabel")
+Info.Size = UDim2.new(1, -20, 0, 25)
+Info.Position = UDim2.fromOffset(10, 155)
+Info.BackgroundTransparency = 1
+Info.Text = "MOBILE PERFORMANCE"
+Info.TextColor3 = Color3.fromRGB(100, 180, 205)
+Info.Font = Enum.Font.Gotham
+Info.TextSize = 10
+Info.Parent = Main
+
+local Open = Instance.new("TextButton")
+Open.Size = UDim2.fromOffset(48, 48)
+Open.Position = UDim2.new(0, 15, 0.5, 0)
+Open.BackgroundColor3 = Color3.fromRGB(10, 30, 45)
+Open.Text = "AC"
+Open.TextColor3 = Color3.fromRGB(0, 220, 255)
+Open.Font = Enum.Font.GothamBold
+Open.TextSize = 16
+Open.Visible = false
+Open.Parent = GUI
+Instance.new("UICorner", Open).CornerRadius = UDim.new(1, 0)
+
+local function updateUI()
+    Status.Text = Enabled and "ESTADO: ACTIVADO" or "ESTADO: DESACTIVADO"
+    Status.TextColor3 = Enabled
+        and Color3.fromRGB(0, 255, 150)
+        or Color3.fromRGB(180, 190, 205)
+
+    Toggle.Text = Enabled and "DESACTIVAR BOOST" or "ACTIVAR BOOST"
+    Toggle.BackgroundColor3 = Enabled
+        and Color3.fromRGB(20, 110, 75)
+        or Color3.fromRGB(20, 75, 95)
+end
+
+Toggle.MouseButton1Click:Connect(function()
+    setEnabled(not Enabled)
+    updateUI()
+end)
+
+Close.MouseButton1Click:Connect(function()
+    Main.Visible = false
+    Open.Visible = true
+end)
+
+Open.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    Open.Visible = false
+end)
+
+Player.CharacterAdded:Connect(function()
+    task.wait(2)
+    if Enabled then
+        optimize()
+    end
+end)
+
+workspace.DescendantAdded:Connect(function(obj)
+    if not Enabled then return end
+    task.defer(function()
+        if not Enabled or not obj.Parent then return end
+        pcall(function()
+            if obj:IsA("BasePart") then
+                save(obj, "CastShadow")
+                obj.CastShadow = false
+            elseif obj:IsA("ParticleEmitter")
+                or obj:IsA("Trail")
+                or obj:IsA("Beam")
+                or obj:IsA("Smoke")
+                or obj:IsA("Fire")
+                or obj:IsA("Sparkles") then
+                save(obj, "Enabled")
+                obj.Enabled = false
+            end
+        end)
+    end)
+end)
+
+updateUI()
